@@ -140,15 +140,8 @@ std::vector<Option> g_options = {
      {{"Game", 0, {}},
       {"Cinematic", 4, {{L"r.SSR.Quality", L"4"}}},
       {"Cinematic + rough surfaces", 8, {{L"r.SSR.Quality", L"4"}, {L"r.SSR.MaxRoughness", L"0.8"}}}}},
-    {"Lighting", "Bounce light (experimental)", "Ssgi", "Screen-space bounce light",
-     "The game has no dynamic bounce light (lighting is baked). This turns on UE's\n"
-     "screen-space global illumination on top: lamps, the flashlight and bright surfaces bounce\n"
-     "colour onto nearby surfaces. Only what's on screen bounces. Experimental: may brighten\n"
-     "scenes the artists lit by hand.",
-     L"r.DynamicGlobalIlluminationMethod",
-     {{"Game", 0, {}},
-      {"On", 1, {{L"r.DynamicGlobalIlluminationMethod", L"2"}, {L"r.SSGI.Quality", L"3"}}},
-      {"On, high quality", 4, {{L"r.DynamicGlobalIlluminationMethod", L"2"}, {L"r.SSGI.Quality", L"4"}}}}},
+    // No GI option: r.DynamicGlobalIlluminationMethod 1 (Lumen) and 2 (SSGI) were both taken live
+    // but changed nothing on screen or in frame time (2026-10-28).
 
     // ------------------------------------------------ shadows
     {"Shadows", "Sun, moon and lamps", "ShadowRes", "Shadow sharpness",
@@ -563,20 +556,23 @@ struct QualityPreset {
 
 const QualityPreset kPresets[] = {
     {"Game", "", "The game's own settings: everything below at Game.", {}},
-    // From the first probe (2026-10-28). Not measured yet; SSGI (experimental) and sharpening
-    // (taste) stay out of both.
-    {"Ultra+", "",
+    // From the first probe (2026-10-28); sharpening (taste) stays out of both. Measured 0.2.1
+    // (RTX 5080, 4K, DLSS 310.9.16 + frame generation, one scene, average present time):
+    // Game 7.72 ms (129.5 fps), Ultra+ 8.39 ms (119.2, +9%), Cinematic 10.93 ms (91.5, +42%).
+    {"Ultra+", "about 9% slower",
      "Upgrades beyond the menu that are usually cheap: Cinematic screen-space reflections,\n"
      "sharper shadows held at -1, Epic soft shadows for lamps, full-resolution character\n"
      "shadows, full skin shading, high-quality hair, 8 GB textures, 16x filtering, far draw\n"
      "distance and finer geometry.\n\n"
-     "Not measured in this game yet: use Measure preset costs.",
+     "Measured on an RTX 5080 at 4K with DLSS and frame generation in one scene: 130 fps\n"
+     "with Game, 119 with Ultra+.",
      {{"Ssr", 4}, {"ShadowRes", 1}, {"ShadowSoft", 8}, {"CapsuleShadows", 1}, {"Skin", 1}, {"Hair", 1},
       {"TexturePool", 8192}, {"Anisotropy", 16}, {"ViewDistance", 150}, {"NaniteDetail", 1}}},
-    {"Cinematic", "",
+    {"Cinematic", "about 40% slower",
      "Ultra+ plus costlier upgrades: reflections on rough surfaces, the sharpest shadows,\n"
      "16-ray soft shadows and the finest fog.\n\n"
-     "Not measured in this game yet: use Measure preset costs.",
+     "Measured on an RTX 5080 at 4K with DLSS and frame generation in one scene: 130 fps\n"
+     "with Game, 92 with Cinematic. Measure each option shows which part costs most.",
      {{"Ssr", 8}, {"ShadowRes", 2}, {"ShadowSoft", 16}, {"CapsuleShadows", 1}, {"Skin", 1}, {"Hair", 1},
       {"TexturePool", 8192}, {"Anisotropy", 16}, {"ViewDistance", 150}, {"NaniteDetail", 1}, {"FogCells", 4}}},
 };

@@ -119,7 +119,18 @@ Connected at +7 s; layout check passed (IsVariableBool +0x30, data +0x48, sinks 
 shadow sharpness now -1 / -1.5 (0.1.0's -0.5 was softer than the game), shadow distance dropped,
 Epic choices equal to the game dropped, sharpening added.
 
-## Open
+## Second session (0.2.1, 2026-10-28, DLSS 310.9.16)
+
+- DLSS 310.9.16 + frame generation: works, looks good (user). NGX logs stay empty (logging off).
+- SSGI option (`r.DynamicGlobalIlluminationMethod 2`, quality 3 and 4): values taken, **no visible
+  difference** (user). Removed in 0.3.0, like Lumen.
+- RT test finished as stage 3 on the next launch; Engine.ini writable again (`Locked=0`).
+- Post-processing switches all applied (grain, fringe, DOF, flares, motion blur).
+- Presets (one scene, average present time, frame generation on): Game 7.72 ms (129.5 fps),
+  Ultra+ 8.39 ms (119.2 fps, **+9%**), Cinematic 10.93 ms (91.5 fps, **+42%**). Per-option costs
+  not run yet.
+
+## Open (old list)
 
 - Software Lumen live test (`r.DynamicGlobalIlluminationMethod 1`), SSGI look, presets measured,
   RT test, DLSS DLL swap (310.x).
