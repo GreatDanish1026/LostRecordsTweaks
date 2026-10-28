@@ -130,6 +130,23 @@ Epic choices equal to the game dropped, sharpening added.
   Ultra+ 8.39 ms (119.2 fps, **+9%**), Cinematic 10.93 ms (91.5 fps, **+42%**). Per-option costs
   not run yet.
 
+## Per-option costs (0.3.0, 2026-10-28, same setup, 10 s per stage)
+
+Game 7.75 ms at the start, 7.67 at the end (base 7.71 ms). Noise is about ±3% (some free
+options measured faster than Game). Present times include frame generation.
+
+| Option | Frame time |
+|---|---|
+| ShadowRes Sharpest (-1.5, 16384 pages) | +13.8% |
+| ShadowSoft Cinematic (16 rays) | +12.7% |
+| FogCells Fine (4 px) | +6.2% |
+| ShadowRes Sharp (-1, 8192 pages) | +5.9% |
+| Nanite 0.5 px, 8 GB pool, SSR Cinematic, hair, view distance, capsule | +0 to +1.4% (noise) |
+| SSR + rough, Epic soft shadows, 16x aniso, full skin | -1 to -3% (noise) |
+
+Ultra+ (+9%) is essentially Sharp shadows. Cinematic (+42%) is Sharpest + 16 rays + fine fog
+(sum ~33%, the two shadow options compound).
+
 ## Open (old list)
 
 - Software Lumen live test (`r.DynamicGlobalIlluminationMethod 1`), SSGI look, presets measured,
