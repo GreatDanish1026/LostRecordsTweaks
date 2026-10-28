@@ -1,4 +1,4 @@
-# LostRecordsTweaks 0.3.0
+# LostRecordsTweaks 0.3.1
 
 Graphics add-on for **Lost Records: Bloom & Rage** (PC, Steam), for ReShade with add-on support.
 Raises the game's shadow, reflection, character and detail settings beyond what its menu

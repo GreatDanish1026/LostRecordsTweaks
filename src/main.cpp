@@ -135,7 +135,8 @@ std::vector<Option> g_options = {
      "The game reflects with screen-space reflections at quality 3 (Epic), and each scene\n"
      "limits which surfaces get them. Cinematic: quality 4 (more steps, fewer gaps).\n"
      "+ rough surfaces also traces reflections up to roughness 0.8 everywhere (wood,\n"
-     "painted walls), overriding the scene's limit.",
+     "painted walls), overriding the scene's limit.\n"
+     "Both measured free in a test scene (may cost more where there's much to reflect).",
      L"r.SSR.Quality",
      {{"Game", 0, {}},
       {"Cinematic", 4, {{L"r.SSR.Quality", L"4"}}},
@@ -148,7 +149,9 @@ std::vector<Option> g_options = {
      "The game sharpens shadows itself up to a resolution bias of -1, but backs off (it read\n"
      "-0.58) whenever shadows take over 40% of the frame, with only 3200 shadow pages.\n"
      "Sharp: holds -1 with 8192 pages. Sharpest: holds -1.5 with 16384 pages (more\n"
-     "video memory and GPU time). Lower bias = sharper.",
+     "video memory). Lower bias = sharper.\n"
+     "About 6% (Sharp) and 14% (Sharpest) longer frames; more together with 16-ray soft\n"
+     "shadows.",
      L"r.Shadow.Virtual.ResolutionLodBiasLocal",
      {{"Game", 0, {}},
       {"Sharp", 1,
@@ -162,7 +165,8 @@ std::vector<Option> g_options = {
     {"Shadows", "Sun, moon and lamps", "ShadowSoft", "Soft shadow quality",
      "Rays per pixel for the soft edges of shadows. The game uses 8 rays of 4 samples for\n"
      "the sun but only 5 of 3 for lamps and the flashlight. Epic: 8 of 4 for both.\n"
-     "Cinematic: 16 of 8, smoother and steadier at a real cost.",
+     "Cinematic: 16 of 8, smoother and steadier.\n"
+     "Epic is free; Cinematic about 13% longer frames.",
      L"r.Shadow.Virtual.SMRT.RayCountLocal",
      {{"Game", 0, {}},
       {"Epic (8 rays)", 8,
@@ -177,7 +181,7 @@ std::vector<Option> g_options = {
         {L"r.Shadow.Virtual.SMRT.SamplesPerRayLocal", L"8"}}}}},
     {"Shadows", "Characters", "CapsuleShadows", "Character soft shadows",
      "The soft indirect shadows characters cast on the ground and walls, at full resolution\n"
-     "instead of half (the game's).",
+     "instead of half (the game's). Free.",
      L"r.CapsuleShadowsFullResolution",
      {{"Game", 0, {}}, {"Full resolution", 1, {{L"r.CapsuleShadowsFullResolution", L"1"}}}}},
 
@@ -185,12 +189,12 @@ std::vector<Option> g_options = {
     {"Characters", "Skin and hair", "Skin", "Skin quality",
      "Subsurface scattering (light through skin): the game lets UE compute it on a\n"
      "checkerboard and fill in the rest (setting 2, automatic); Full computes every pixel:\n"
-     "smoother skin, no fine dithering on faces.",
+     "smoother skin, no fine dithering on faces. Free.",
      L"r.SSS.Checkerboard",
      {{"Game", 0, {}}, {"Full", 1, {{L"r.SSS.Checkerboard", L"0"}}}}},
     {"Characters", "Skin and hair", "Hair", "Hair quality",
      "Strand hair samples per pixel and its shadow map resolution. The game uses 4 samples\n"
-     "and 2048 px: fine strands break up and shimmer. High: 8 samples, 4096 px.",
+     "and 2048 px: fine strands break up and shimmer. High: 8 samples, 4096 px. About 1%.",
      L"r.HairStrands.Visibility.MSAA.SamplePerPixel",
      {{"Game", 0, {}},
       {"High", 1,
@@ -201,7 +205,7 @@ std::vector<Option> g_options = {
     // ------------------------------------------------ detail
     {"Detail", "Textures", "TexturePool", "Texture memory",
      "Video memory for streamed textures. The game keeps 2 GB whatever the card, so\n"
-     "textures can go blurry and reload. Free on a 16 GB card.",
+     "textures can go blurry and reload. Free on a 16 GB card (measured).",
      L"r.Streaming.PoolSize",
      {{"Game", 0, {}},
       {"4 GB", 4096, {{L"r.Streaming.PoolSize", L"4096"}}},
@@ -214,27 +218,28 @@ std::vector<Option> g_options = {
      {{"Game", 0, {}}, {"16x", 16, {{L"r.MaxAnisotropy", L"16"}, {L"r.VT.MaxAnisotropy", L"16"}}}}},
     {"Detail", "Distance", "ViewDistance", "Draw distance",
      "Distance at which objects, foliage and details switch to simpler versions or vanish.\n"
-     "The game uses 100%.",
+     "The game uses 100%. Free in the test scene.",
      L"r.ViewDistanceScale",
      {{"Game", 0, {}},
       {"Far (150%)", 150,
        {{L"r.ViewDistanceScale", L"1.5"}, {L"foliage.LODDistanceScale", L"1.5"}}}}},
     {"Detail", "Distance", "NaniteDetail", "Geometry detail",
      "Triangle size of the detailed (Nanite) models, in pixels. The game uses 1 px; 0.5\n"
-     "keeps more detail on distant and mid-range surfaces, most visible with DLSS.",
+     "keeps more detail on distant and mid-range surfaces, most visible with DLSS.\n"
+     "About 1% longer frames.",
      L"r.Nanite.MaxPixelsPerEdge",
      {{"Game", 0, {}}, {"Finer (0.5 px)", 1, {{L"r.Nanite.MaxPixelsPerEdge", L"0.5"}}}}},
     {"Detail", "Fog", "FogCells", "Volumetric fog detail",
      "Size of the fog's light grid in screen pixels. The game uses 8 px with 128 depth\n"
      "slices: blocky light shafts and flicker around lamps and the flashlight beam.\n"
-     "Fine: 4 px.",
+     "Fine: 4 px, about 6% longer frames.",
      L"r.VolumetricFog.GridPixelSize",
      {{"Game", 0, {}},
       {"Fine (4 px)", 4,
        {{L"r.VolumetricFog.GridPixelSize", L"4"}, {L"r.VolumetricFog.GridSizeZ", L"128"}}}}},
     {"Detail", "Image", "Sharpen", "Sharpening",
-     "The tonemapper's sharpening (the game: off). Helps the soft look of DLSS 3.7, whose own\n"
-     "sharpening no longer works.",
+     "The tonemapper's sharpening (the game: off). For a crisper image with DLSS, whose own\n"
+     "sharpening no longer works. Free.",
      L"r.Tonemapper.Sharpen",
      {{"Game", 0, {}},
       {"Light (0.5)", 5, {{L"r.Tonemapper.Sharpen", L"0.5"}}},
