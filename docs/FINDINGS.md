@@ -63,9 +63,22 @@ the Post-processing tab covers them.
 
 ## Hardware ray tracing
 
-`r.RayTracing`, `r.Lumen.HardwareRayTracing`, `r.RayTracing.Nanite.Mode` exist. Project defaults
-are in the compressed pak, so unknown; whether RT shaders were cooked is untested. The Advanced
-tab's self-reverting test (from DoubleExposureTweaks) checks it.
+**Not possible.** `r.RayTracing` is 0 by project (0x03). The Advanced tab's test (2026-10-28)
+started the game with `r.RayTracing=1` and it stopped at start, as in Reunion and Double Exposure:
+
+    LowLevelFatalError [ShaderCompiler.cpp] [Line: 7173]
+    Missing global shader FVisualizeSkyLightMipTreePS's permutation 0, Please make sure cooking was successful.
+
+Unlike those games, Lost Records **saves its config from memory on a fatal error**: the add-on
+took the line out at 12:47:19 and the game wrote it back at 12:47:21, which would have crashed
+every later launch. The line was removed by hand (backup in the session scratchpad). 0.2.1 makes
+Engine.ini read-only for the test launch (state `Locked=1` in `LostRecordsTweaks-rttest.ini`) and
+makes it writable again at the check or at the next launch.
+
+## Software Lumen live (2026-10-28, 0.1.0 console box)
+
+`r.DynamicGlobalIlluminationMethod 1` (75 s) and `r.ReflectionMethod 1` (40 s) were taken live in
+a scene and the game ran on and exited normally. Visual result not reported yet.
 
 ## First probe (0.1.0, 2026-10-28, menu all Epic, 4K, DLSS on, HDR 1000)
 

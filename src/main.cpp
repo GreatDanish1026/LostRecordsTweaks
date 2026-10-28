@@ -844,6 +844,12 @@ void RayTracingOnPresent() {
 //     the test failed (the next launch already started without the settings).
 //   Stage 3 "done": Result holds the outcome.
 //
+// Lost Records saves its config from memory when it hits a fatal error (seen 2026-10-28: the
+// test launch stopped at start and wrote r.RayTracing=1 back 2 s after the add-on took it out,
+// so every later launch would have crashed). So the test launch also makes Engine.ini read-only
+// after taking the lines out (Locked=1 in the state file); the check, or the next launch,
+// makes it writable again.
+//
 // State lives in LostRecordsTweaks-rttest.ini next to the exe (not ReShade.ini: ReShade may
 // not save it when the game crashes). SkinCache=1 records that the test added that line too.
 
@@ -863,6 +869,7 @@ struct RtTest {
     DWORD pid = 0;
     bool skinCache = false;  // the test added r.SkinCache.CompileShaders
     bool works = false;
+    bool locked = false;  // the add-on made Engine.ini read-only for the test launch
     std::string result;
     bool startupChecked = false;  // this process ran the load-time step
 } g_rt;
@@ -876,6 +883,7 @@ void SaveRtState() {
     WritePrivateProfileStringW(L"Test", L"Pid", buf, p.c_str());
     WritePrivateProfileStringW(L"Test", L"SkinCache", g_rt.skinCache ? L"1" : L"0", p.c_str());
     WritePrivateProfileStringW(L"Test", L"Works", g_rt.works ? L"1" : L"0", p.c_str());
+    WritePrivateProfileStringW(L"Test", L"Locked", g_rt.locked ? L"1" : L"0", p.c_str());
     std::wstring r(g_rt.result.begin(), g_rt.result.end());
     WritePrivateProfileStringW(L"Test", L"Result", r.c_str(), p.c_str());
 }
@@ -886,6 +894,7 @@ void LoadRtState() {
     g_rt.pid = static_cast<DWORD>(GetPrivateProfileIntW(L"Test", L"Pid", 0, p.c_str()));
     g_rt.skinCache = GetPrivateProfileIntW(L"Test", L"SkinCache", 0, p.c_str()) != 0;
     g_rt.works = GetPrivateProfileIntW(L"Test", L"Works", 0, p.c_str()) != 0;
+    g_rt.locked = GetPrivateProfileIntW(L"Test", L"Locked", 0, p.c_str()) != 0;
     wchar_t buf[512] = {};
     GetPrivateProfileStringW(L"Test", L"Result", L"", buf, 512, p.c_str());
     g_rt.result = Narrow(buf);
@@ -924,10 +933,28 @@ void RemoveRtLines() {
     if (g_rt.skinCache) WritePrivateProfileStringW(kRendererSection, L"r.SkinCache.CompileShaders", nullptr, path.c_str());
 }
 
+// Sets or clears Engine.ini's read-only flag (only ever the flag this add-on set).
+void LockEngineIni(bool lock) {
+    const std::wstring path = EngineIniPath();
+    DWORD attr = GetFileAttributesW(path.c_str());
+    if (path.empty() || attr == INVALID_FILE_ATTRIBUTES) return;
+    DWORD want = lock ? (attr | FILE_ATTRIBUTE_READONLY) : (attr & ~FILE_ATTRIBUTE_READONLY);
+    if (want != attr && !SetFileAttributesW(path.c_str(), want)) {
+        Log("ray tracing test: couldn't make Engine.ini %s (error %lu)", lock ? "read-only" : "writable", GetLastError());
+        return;
+    }
+    g_rt.locked = lock;
+    Log("ray tracing test: Engine.ini %s", lock ? "made read-only for this launch" : "writable again");
+}
+
 // At load: moves an armed test to running, or finishes a test whose launch never reported back.
 void RtTestOnLoad() {
     LoadRtState();
     const DWORD me = GetCurrentProcessId();
+    if (g_rt.locked) {  // a test launch ended without unlocking (it stopped at start)
+        LockEngineIni(false);
+        SaveRtState();
+    }
     if (g_rt.stage == 1) {
         if (EngineIniValue(L"r.RayTracing") != L"1") {
             // Too late for this launch (the engine read its config before ReShade loaded).
@@ -940,6 +967,7 @@ void RtTestOnLoad() {
         RemoveRtLines();
         g_rt.stage = 2;
         g_rt.pid = me;
+        LockEngineIni(true);  // the game rewrites Engine.ini from memory if it stops at start
         SaveRtState();
         Log("ray tracing test: this launch started with r.RayTracing=1%s in Engine.ini (taken out again until "
             "the check passes)",
@@ -960,6 +988,7 @@ void RtTestOnLoad() {
 void RtTestOnPresent() {
     if (g_rt.stage != 2 || g_rt.pid != GetCurrentProcessId()) return;
     if (GetTickCount64() - g_readyTick < 10000) return;
+    LockEngineIni(false);
     std::wstring rt, skin;
     Read(L"r.RayTracing", rt);
     Read(L"r.SkinCache.CompileShaders", skin);
