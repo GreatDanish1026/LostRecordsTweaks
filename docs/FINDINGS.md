@@ -78,7 +78,11 @@ makes it writable again at the check or at the next launch.
 ## Software Lumen live (2026-10-28, 0.1.0 console box)
 
 `r.DynamicGlobalIlluminationMethod 1` (75 s) and `r.ReflectionMethod 1` (40 s) were taken live in
-a scene and the game ran on and exited normally. Visual result not reported yet.
+a scene and the game ran on and exited normally, but **nothing changed**: no visible difference
+and no frame-rate change (user, 2026-10-28). So Lumen never ran: either the scenes' post-process
+volumes override the GI/reflection method, or Lumen's material shaders weren't cooked. Dropped.
+The 0.2.x SSGI option uses the same cvar (`r.DynamicGlobalIlluminationMethod 2`), so it likely
+does nothing either; to check in game, then remove if so.
 
 ## First probe (0.1.0, 2026-10-28, menu all Epic, 4K, DLSS on, HDR 1000)
 
