@@ -35,6 +35,14 @@ Ships NVIDIA's UE plugin (`Engine\Plugins\NvidiaDLSS`: `nvngx_dlss.dll`, Streaml
 `Engine/Plugins/AMDFSR/FSR3`) and NIS (`r.NIS.*`). So DLSS and frame generation are native: no
 separate DLSS add-on needed (unlike Double Exposure / Reunion).
 
+Shipped versions: `nvngx_dlss.dll` and `nvngx_dlssg.dll` 3.7.10, Streamline `sl.*` 2.4.10,
+`nvngx_deepdvc.dll` 1.0.1. **2026-10-28: swapped both DLSS files to 310.9.16** (NVIDIA-signed,
+from E:\DoubleExposureDLSS\third_party); originals in
+`<game>\_DLSS_backup_3.7.10\`. Streamline left at 2.4.10 on purpose (upgrading Streamline crashed
+Jedi Survivor). A Steam verify/update will restore 3.7.10. The UE plugin's `r.NGX.DLSS.Preset`
+predates the transformer presets, so the model choice comes from DLSS's default or the NVIDIA
+app's override.
+
 ## Console variable layout
 
 Static scan of `Bloom&Rage.exe` (scratch script, 2026-10-28):
