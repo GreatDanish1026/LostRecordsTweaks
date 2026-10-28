@@ -67,6 +67,34 @@ the Post-processing tab covers them.
 are in the compressed pak, so unknown; whether RT shaders were cooked is untested. The Advanced
 tab's self-reverting test (from DoubleExposureTweaks) checks it.
 
+## First probe (0.1.0, 2026-10-28, menu all Epic, 4K, DLSS on, HDR 1000)
+
+Connected at +7 s; layout check passed (IsVariableBool +0x30, data +0x48, sinks flag +0xe0);
+1517 values. ReShade 6.8 loads fine alongside Streamline.
+
+- **No Lumen**: `r.DynamicGlobalIlluminationMethod 0`, `r.ReflectionMethod 2` (SSR), both set by
+  project (0x03). Lighting is baked (DNE `VLM`/`LMD` cvars). `r.Lumen.HardwareRayTracing 1` (0x03)
+  but unused. Distance fields on (`r.DistanceFieldAO 1`, mesh SDFs exist), so software Lumen might
+  work live; untested.
+- SSR quality 3, `r.SSR.MaxRoughness -1` (scene's limit). SSGI cvars exist (quality 3) but GI
+  method 0, so SSGI is off.
+- Shadows (VSM): `ResolutionLodBias*` -0.578 and `MaxPhysicalPages` 3200, all set by code (0x09):
+  the game's own system (`r.uni.VirtualShadowsResolutionTargetLodBias -1`,
+  `r.uni.ShadowDepthsFrameTimeTargetFraction 0.4`) backs off from -1. SMRT directional 8x4, local
+  5x3. `r.Shadow.DistanceScale 2.5` already. Contact shadows on, capsule shadows half res.
+- `r.SSS.Checkerboard 2`, hair 4 spp / 2048 deep shadow, pool 2000 MB, aniso 8, view distance 1,
+  Nanite 1 px, fog 8 px / 128, `r.Tonemapper.Sharpen 0`.
+- Upscaling: `r.NGX.DLSS.Enable 1` (0x08), `r.DynamicRes.OperationMode 2` with min = max 66.7%
+  (code: DLSS Quality), `r.ScreenPercentage 90`, `r.AntiAliasingMethod 4`. DLSS preset 0,
+  sharpness 0. `nvngx_dlss.dll` and `nvngx_dlssg.dll` are **3.7.10** (CNN model). FSR3 off.
+- Post: film grain 1, fringe 1, DOF 4, lens flares 2, motion blur quality 4 but
+  `r.MotionBlur.Max 0` (code: menu switch off).
+
+0.2.0 rebuilt the options from this: Lumen options dropped, SSR + experimental SSGI added,
+shadow sharpness now -1 / -1.5 (0.1.0's -0.5 was softer than the game), shadow distance dropped,
+Epic choices equal to the game dropped, sharpening added.
+
 ## Open
 
-- First probe in game (values per menu tier), presets measured, RT test.
+- Software Lumen live test (`r.DynamicGlobalIlluminationMethod 1`), SSGI look, presets measured,
+  RT test, DLSS DLL swap (310.x).

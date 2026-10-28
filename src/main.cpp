@@ -126,63 +126,50 @@ struct Option {
     int value = 0;
 };
 
-// Starting set, from DoubleExposureTweaks: every cvar here exists in this exe (checked offline,
-// 2026-10-28). The game's own values aren't known yet (first probe), so tips don't quote them and
-// costs aren't measured.
+// Options for this game, from the first probe (2026-10-28, 4K, menu all Epic, DLSS on): the
+// project has no Lumen (r.DynamicGlobalIlluminationMethod 0, r.ReflectionMethod 2 = SSR; baked
+// lighting), so DoubleExposureTweaks' Lumen options are gone. Game values are quoted in the tips.
 std::vector<Option> g_options = {
-    // ------------------------------------------------ lighting (Lumen)
-    {"Lighting", "Global illumination", "GiTracing", "Bounce light tracing",
-     "What Lumen traces bounce light against. Lumen's default traces only a coarse whole-scene\n"
-     "distance field: soft, blobby bounce light and leaks through thin walls. Detailed traces\n"
-     "each object's own distance field near the camera. Cost not measured here yet.",
-     L"r.Lumen.TraceMeshSDFs.Allow",
-     {{"Game", 0, {}}, {"Detailed", 1, {{L"r.Lumen.TraceMeshSDFs.Allow", L"1"}}}}},
-    {"Lighting", "Global illumination", "GiProbes", "Bounce light detail",
-     "Spacing of Lumen's lighting probes in pixels and how many rays each traces. Epic+ raises\n"
-     "the far-field probe budget (usually free). Cinematic is 8 px with twice the rays per\n"
-     "probe: steadier, more detailed indirect light on faces and walls, but it can double the\n"
-     "frame time.",
-     L"r.Lumen.ScreenProbeGather.DownsampleFactor",
+    // ------------------------------------------------ lighting (baked + screen space)
+    {"Lighting", "Reflections", "Ssr", "Screen-space reflections",
+     "The game reflects with screen-space reflections at quality 3 (Epic), and each scene\n"
+     "limits which surfaces get them. Cinematic: quality 4 (more steps, fewer gaps).\n"
+     "+ rough surfaces also traces reflections up to roughness 0.8 everywhere (wood,\n"
+     "painted walls), overriding the scene's limit.",
+     L"r.SSR.Quality",
      {{"Game", 0, {}},
-      {"Epic+", 16,
-       {{L"r.Lumen.ScreenProbeGather.DownsampleFactor", L"16"},
-        {L"r.Lumen.ScreenProbeGather.RadianceCache.NumProbesToTraceBudget", L"500"}}},
-      {"Cinematic", 8,
-       {{L"r.Lumen.ScreenProbeGather.DownsampleFactor", L"8"},
-        {L"r.Lumen.ScreenProbeGather.TracingOctahedronResolution", L"16"},
-        {L"r.Lumen.ScreenProbeGather.RadianceCache.NumProbesToTraceBudget", L"1000"}}}}},
-    {"Lighting", "Reflections", "ReflRoughness", "Reflections on rougher surfaces",
-     "Lumen traces reflections up to this roughness; rougher surfaces (wood, painted walls,\n"
-     "skin) fall back to blurry probe lighting. Each scene's post-process settings can cap it,\n"
-     "so it may change little in some places.",
-     L"r.Lumen.Reflections.MaxRoughnessToTrace",
+      {"Cinematic", 4, {{L"r.SSR.Quality", L"4"}}},
+      {"Cinematic + rough surfaces", 8, {{L"r.SSR.Quality", L"4"}, {L"r.SSR.MaxRoughness", L"0.8"}}}}},
+    {"Lighting", "Bounce light (experimental)", "Ssgi", "Screen-space bounce light",
+     "The game has no dynamic bounce light (lighting is baked). This turns on UE's\n"
+     "screen-space global illumination on top: lamps, the flashlight and bright surfaces bounce\n"
+     "colour onto nearby surfaces. Only what's on screen bounces. Experimental: may brighten\n"
+     "scenes the artists lit by hand.",
+     L"r.DynamicGlobalIlluminationMethod",
      {{"Game", 0, {}},
-      {"0.6", 6, {{L"r.Lumen.Reflections.MaxRoughnessToTrace", L"0.6"}}},
-      {"0.8", 8, {{L"r.Lumen.Reflections.MaxRoughnessToTrace", L"0.8"}}}}},
-    {"Lighting", "Reflections", "ReflGlass", "Glass and water reflections",
-     "Lumen reflections on transparent surfaces (windows, glasses, water).",
-     L"r.Lumen.TranslucencyReflections.FrontLayer.Enable",
-     {{"Game", 0, {}}, {"On", 1, {{L"r.Lumen.TranslucencyReflections.FrontLayer.Enable", L"1"}}}}},
+      {"On", 1, {{L"r.DynamicGlobalIlluminationMethod", L"2"}, {L"r.SSGI.Quality", L"3"}}},
+      {"On, high quality", 4, {{L"r.DynamicGlobalIlluminationMethod", L"2"}, {L"r.SSGI.Quality", L"4"}}}}},
 
     // ------------------------------------------------ shadows
     {"Shadows", "Sun, moon and lamps", "ShadowRes", "Shadow sharpness",
-     "Resolution of the virtual shadow maps (lower bias = sharper). Sharp: -0.5 for sun and\n"
-     "lamps, twice the shadow memory. Sharpest: -1, four times the memory.\n"
-     "The game has its own frame-time-driven shadow resolution (r.uni.*); if it fights these\n"
-     "values the add-on puts them back and logs it.",
+     "The game sharpens shadows itself up to a resolution bias of -1, but backs off (it read\n"
+     "-0.58) whenever shadows take over 40% of the frame, with only 3200 shadow pages.\n"
+     "Sharp: holds -1 with 8192 pages. Sharpest: holds -1.5 with 16384 pages (more\n"
+     "video memory and GPU time). Lower bias = sharper.",
      L"r.Shadow.Virtual.ResolutionLodBiasLocal",
      {{"Game", 0, {}},
       {"Sharp", 1,
        {{L"r.Shadow.Virtual.MaxPhysicalPages", L"8192"},
-        {L"r.Shadow.Virtual.ResolutionLodBiasDirectional", L"-0.5"},
-        {L"r.Shadow.Virtual.ResolutionLodBiasLocal", L"-0.5"}}},
+        {L"r.Shadow.Virtual.ResolutionLodBiasDirectional", L"-1"},
+        {L"r.Shadow.Virtual.ResolutionLodBiasLocal", L"-1"}}},
       {"Sharpest", 2,
        {{L"r.Shadow.Virtual.MaxPhysicalPages", L"16384"},
-        {L"r.Shadow.Virtual.ResolutionLodBiasDirectional", L"-1"},
-        {L"r.Shadow.Virtual.ResolutionLodBiasLocal", L"-1"}}}}},
+        {L"r.Shadow.Virtual.ResolutionLodBiasDirectional", L"-1.5"},
+        {L"r.Shadow.Virtual.ResolutionLodBiasLocal", L"-1.5"}}}}},
     {"Shadows", "Sun, moon and lamps", "ShadowSoft", "Soft shadow quality",
-     "Rays per pixel for the soft edges of shadows. Epic is 8 rays of 4 samples; 16 rays give\n"
-     "smoother, steadier soft shadows at a real cost, more together with Sharpest shadows.",
+     "Rays per pixel for the soft edges of shadows. The game uses 8 rays of 4 samples for\n"
+     "the sun but only 5 of 3 for lamps and the flashlight. Epic: 8 of 4 for both.\n"
+     "Cinematic: 16 of 8, smoother and steadier at a real cost.",
      L"r.Shadow.Virtual.SMRT.RayCountLocal",
      {{"Game", 0, {}},
       {"Epic (8 rays)", 8,
@@ -195,27 +182,22 @@ std::vector<Option> g_options = {
         {L"r.Shadow.Virtual.SMRT.SamplesPerRayDirectional", L"8"},
         {L"r.Shadow.Virtual.SMRT.RayCountLocal", L"16"},
         {L"r.Shadow.Virtual.SMRT.SamplesPerRayLocal", L"8"}}}}},
-    {"Shadows", "Sun, moon and lamps", "ShadowDistance", "Shadow distance",
-     "How far away lamps still cast shadows.",
-     L"r.Shadow.DistanceScale",
-     {{"Game", 0, {}}, {"Full (100%)", 100, {{L"r.Shadow.DistanceScale", L"1"}}},
-      {"Far (150%)", 150, {{L"r.Shadow.DistanceScale", L"1.5"}}}}},
     {"Shadows", "Characters", "CapsuleShadows", "Character soft shadows",
      "The soft indirect shadows characters cast on the ground and walls, at full resolution\n"
-     "instead of half.",
+     "instead of half (the game's).",
      L"r.CapsuleShadowsFullResolution",
      {{"Game", 0, {}}, {"Full resolution", 1, {{L"r.CapsuleShadowsFullResolution", L"1"}}}}},
 
     // ------------------------------------------------ characters
     {"Characters", "Skin and hair", "Skin", "Skin quality",
-     "Subsurface scattering (light through skin): UE computes it on a checkerboard by default\n"
-     "and fills in the rest; Full computes every pixel: smoother skin, no fine dithering on\n"
-     "faces.",
+     "Subsurface scattering (light through skin): the game lets UE compute it on a\n"
+     "checkerboard and fill in the rest (setting 2, automatic); Full computes every pixel:\n"
+     "smoother skin, no fine dithering on faces.",
      L"r.SSS.Checkerboard",
      {{"Game", 0, {}}, {"Full", 1, {{L"r.SSS.Checkerboard", L"0"}}}}},
     {"Characters", "Skin and hair", "Hair", "Hair quality",
-     "Strand hair samples per pixel and its shadow map resolution. High: 8 samples, 4096 px:\n"
-     "fine strands break up and shimmer less, most visible at reduced resolution scale.",
+     "Strand hair samples per pixel and its shadow map resolution. The game uses 4 samples\n"
+     "and 2048 px: fine strands break up and shimmer. High: 8 samples, 4096 px.",
      L"r.HairStrands.Visibility.MSAA.SamplePerPixel",
      {{"Game", 0, {}},
       {"High", 1,
@@ -225,59 +207,61 @@ std::vector<Option> g_options = {
 
     // ------------------------------------------------ detail
     {"Detail", "Textures", "TexturePool", "Texture memory",
-     "Video memory for streamed textures. Too small a pool makes textures go blurry and\n"
-     "reload. Free on a 16 GB card.",
+     "Video memory for streamed textures. The game keeps 2 GB whatever the card, so\n"
+     "textures can go blurry and reload. Free on a 16 GB card.",
      L"r.Streaming.PoolSize",
      {{"Game", 0, {}},
       {"4 GB", 4096, {{L"r.Streaming.PoolSize", L"4096"}}},
       {"6 GB", 6144, {{L"r.Streaming.PoolSize", L"6144"}}},
       {"8 GB", 8192, {{L"r.Streaming.PoolSize", L"8192"}}}}},
     {"Detail", "Textures", "Anisotropy", "Anisotropic filtering",
-     "Sharper floors and roads at shallow angles. Textures already loaded keep their\n"
-     "filtering until they reload (or the game restarts). Free.",
+     "Sharper floors and roads at shallow angles. The game uses 8x. Textures already loaded\n"
+     "keep their filtering until they reload (or the game restarts). Free.",
      L"r.MaxAnisotropy",
      {{"Game", 0, {}}, {"16x", 16, {{L"r.MaxAnisotropy", L"16"}, {L"r.VT.MaxAnisotropy", L"16"}}}}},
     {"Detail", "Distance", "ViewDistance", "Draw distance",
-     "Distance at which objects, foliage and details switch to simpler versions or vanish.",
+     "Distance at which objects, foliage and details switch to simpler versions or vanish.\n"
+     "The game uses 100%.",
      L"r.ViewDistanceScale",
      {{"Game", 0, {}},
-      {"Epic (100%)", 100, {{L"r.ViewDistanceScale", L"1"}, {L"foliage.DensityScale", L"1"}}},
       {"Far (150%)", 150,
-       {{L"r.ViewDistanceScale", L"1.5"}, {L"foliage.DensityScale", L"1"}, {L"foliage.LODDistanceScale", L"1.5"}}}}},
+       {{L"r.ViewDistanceScale", L"1.5"}, {L"foliage.LODDistanceScale", L"1.5"}}}}},
     {"Detail", "Distance", "NaniteDetail", "Geometry detail",
-     "Triangle size of the detailed (Nanite) models, in pixels. Smaller keeps more detail on\n"
-     "distant and mid-range surfaces. Matters most at reduced resolution scale.",
+     "Triangle size of the detailed (Nanite) models, in pixels. The game uses 1 px; 0.5\n"
+     "keeps more detail on distant and mid-range surfaces, most visible with DLSS.",
      L"r.Nanite.MaxPixelsPerEdge",
      {{"Game", 0, {}}, {"Finer (0.5 px)", 1, {{L"r.Nanite.MaxPixelsPerEdge", L"0.5"}}}}},
     {"Detail", "Fog", "FogCells", "Volumetric fog detail",
-     "Size of the fog's light grid in screen pixels and its depth slices: coarse grids give\n"
-     "blocky light shafts and flicker around lamps (and flashlight beams).",
+     "Size of the fog's light grid in screen pixels. The game uses 8 px with 128 depth\n"
+     "slices: blocky light shafts and flicker around lamps and the flashlight beam.\n"
+     "Fine: 4 px.",
      L"r.VolumetricFog.GridPixelSize",
      {{"Game", 0, {}},
-      {"Epic (8 px)", 8,
-       {{L"r.VolumetricFog.GridPixelSize", L"8"}, {L"r.VolumetricFog.GridSizeZ", L"128"}}},
       {"Fine (4 px)", 4,
-       {{L"r.VolumetricFog.GridPixelSize", L"4"}, {L"r.VolumetricFog.GridSizeZ", L"128"},
-        {L"r.VolumetricFog.HistoryMissSupersampleCount", L"8"}}}}},
-    {"Detail", "Image", "TsrHistory", "Upscaler precision (TSR)",
-     "TSR can keep its history in a compact colour format that bands in dark HDR scenes and\n"
-     "gradients. High stores it at full precision. Only matters with TSR (not DLSS or FSR).",
-     L"r.TSR.History.R11G11B10",
-     {{"Game", 0, {}}, {"High", 1, {{L"r.TSR.History.R11G11B10", L"0"}}}}},
+       {{L"r.VolumetricFog.GridPixelSize", L"4"}, {L"r.VolumetricFog.GridSizeZ", L"128"}}}}},
+    {"Detail", "Image", "Sharpen", "Sharpening",
+     "The tonemapper's sharpening (the game: off). Helps the soft look of DLSS 3.7, whose own\n"
+     "sharpening no longer works.",
+     L"r.Tonemapper.Sharpen",
+     {{"Game", 0, {}},
+      {"Light (0.5)", 5, {{L"r.Tonemapper.Sharpen", L"0.5"}}},
+      {"Medium (1.0)", 10, {{L"r.Tonemapper.Sharpen", L"1"}}}}},
 
     // ------------------------------------------------ post-processing (taste; in no preset)
     {"Post-processing", "Camera", "FilmGrain", "Film grain", "The game's film grain noise (no menu option).",
      L"r.FilmGrain", {{"Game", 0, {}}, {"Off", 1, {{L"r.FilmGrain", L"0"}, {L"r.Tonemapper.GrainQuantization", L"0"}}}}},
-    {"Post-processing", "Camera", "LensFlares", "Lens flares", "Ghost reflections of bright lights across the screen.",
-     L"r.LensFlareQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.LensFlareQuality", L"0"}}}}},
-    {"Post-processing", "Camera", "DepthOfField", "Depth of field",
-     "Background blur in close-ups and cutscenes (no menu option).",
-     L"r.DepthOfFieldQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.DepthOfFieldQuality", L"0"}}}}},
-    {"Post-processing", "Camera", "MotionBlur", "Motion blur", "Blur on fast camera turns and moving objects.",
-     L"r.MotionBlurQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.MotionBlurQuality", L"0"}}}}},
     {"Post-processing", "Camera", "Fringe", "Chromatic aberration",
      "Colour fringes at the screen edges (no menu option).",
      L"r.SceneColorFringeQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.SceneColorFringeQuality", L"0"}}}}},
+    {"Post-processing", "Camera", "DepthOfField", "Depth of field",
+     "Background blur in close-ups and cutscenes (no menu option). Turning it off also\n"
+     "removes deliberate focus effects.",
+     L"r.DepthOfFieldQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.DepthOfFieldQuality", L"0"}}}}},
+    {"Post-processing", "Camera", "LensFlares", "Lens flares", "Ghost reflections of bright lights across the screen.",
+     L"r.LensFlareQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.LensFlareQuality", L"0"}}}}},
+    {"Post-processing", "Camera", "MotionBlur", "Motion blur",
+     "Blur on fast camera turns and moving objects (the menu's switch sets its strength).",
+     L"r.MotionBlurQuality", {{"Game", 0, {}}, {"Off", 1, {{L"r.MotionBlurQuality", L"0"}}}}},
 };
 
 bool g_enabled = true;  // F8
@@ -579,26 +563,22 @@ struct QualityPreset {
 
 const QualityPreset kPresets[] = {
     {"Game", "", "The game's own settings: everything below at Game.", {}},
-    // Starting make-up: DoubleExposureTweaks' Ultra+ and Cinematic (options that cost 2% or less
-    // there, then the costlier ones that still played well). Not measured in this game yet.
+    // From the first probe (2026-10-28). Not measured yet; SSGI (experimental) and sharpening
+    // (taste) stay out of both.
     {"Ultra+", "",
-     "Upgrades beyond the menu that are usually cheap: more lighting probes, reflections on\n"
-     "rougher surfaces and on glass, sharper shadows, far shadow and draw distance,\n"
-     "full-resolution character shadows, full skin shading, high-quality hair, 8 GB textures,\n"
-     "16x filtering, finer geometry and the higher-precision upscaler.\n\n"
+     "Upgrades beyond the menu that are usually cheap: Cinematic screen-space reflections,\n"
+     "sharper shadows held at -1, Epic soft shadows for lamps, full-resolution character\n"
+     "shadows, full skin shading, high-quality hair, 8 GB textures, 16x filtering, far draw\n"
+     "distance and finer geometry.\n\n"
      "Not measured in this game yet: use Measure preset costs.",
-     {{"GiProbes", 16}, {"ReflRoughness", 6}, {"ReflGlass", 1}, {"ShadowRes", 1}, {"ShadowDistance", 150},
-      {"CapsuleShadows", 1}, {"Skin", 1}, {"Hair", 1}, {"TexturePool", 8192}, {"Anisotropy", 16},
-      {"ViewDistance", 150}, {"NaniteDetail", 1}, {"FogCells", 8}, {"TsrHistory", 1}}},
+     {{"Ssr", 4}, {"ShadowRes", 1}, {"ShadowSoft", 8}, {"CapsuleShadows", 1}, {"Skin", 1}, {"Hair", 1},
+      {"TexturePool", 8192}, {"Anisotropy", 16}, {"ViewDistance", 150}, {"NaniteDetail", 1}}},
     {"Cinematic", "",
-     "Ultra+ plus costlier upgrades: detailed bounce light tracing (less light leaking through\n"
-     "walls), reflections on rougher surfaces (0.8), the sharpest shadows and the finest fog.\n\n"
-     "Leaves out Cinematic lighting probes and 16 soft-shadow rays (very costly); both stay on\n"
-     "the Lighting and Shadows tabs for screenshots.\n\n"
+     "Ultra+ plus costlier upgrades: reflections on rough surfaces, the sharpest shadows,\n"
+     "16-ray soft shadows and the finest fog.\n\n"
      "Not measured in this game yet: use Measure preset costs.",
-     {{"GiTracing", 1}, {"GiProbes", 16}, {"ReflRoughness", 8}, {"ReflGlass", 1}, {"ShadowRes", 2},
-      {"ShadowDistance", 150}, {"CapsuleShadows", 1}, {"Skin", 1}, {"Hair", 1}, {"TexturePool", 8192},
-      {"Anisotropy", 16}, {"ViewDistance", 150}, {"NaniteDetail", 1}, {"FogCells", 4}, {"TsrHistory", 1}}},
+     {{"Ssr", 8}, {"ShadowRes", 2}, {"ShadowSoft", 16}, {"CapsuleShadows", 1}, {"Skin", 1}, {"Hair", 1},
+      {"TexturePool", 8192}, {"Anisotropy", 16}, {"ViewDistance", 150}, {"NaniteDetail", 1}, {"FogCells", 4}}},
 };
 constexpr int kPresetCount = static_cast<int>(sizeof(kPresets) / sizeof(kPresets[0]));
 
@@ -1220,7 +1200,7 @@ void DrawRayTracingTest() {
     if (!g_rtError.empty()) ImGui::TextColored(kBad, "%s", g_rtError.c_str());
 }
 
-char g_cvarName[128] = "r.Lumen.HardwareRayTracing";
+char g_cvarName[128] = "r.DynamicGlobalIlluminationMethod";
 char g_cvarValue[64] = "";
 std::string g_cvarResult;
 
